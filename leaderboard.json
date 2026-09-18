@@ -1,0 +1,73 @@
+{
+  "schema": "loop-puzzle.leaderboard",
+  "version": 3,
+  "exportedAt": "2026-09-18T12:00:00.000Z",
+  "fields": {
+    "id": "單筆成績的唯一識別碼",
+    "name": "玩家代號，英數 1–8 字",
+    "ms": "完成時間，毫秒",
+    "seconds": "完成時間，秒（由 ms 換算，方便閱讀）",
+    "moves": "完成步數",
+    "date": "完成日期，YYYY-MM-DD，玩家當地時間",
+    "time": "完成時刻，HH:MM:SS，玩家當地時間",
+    "timestamp": "完成時間戳，Unix epoch 毫秒",
+    "iso": "完成時間，ISO 8601 UTC"
+  },
+  "sort": "先比 ms，同值再比 moves；每個代號只保留最快的一局",
+  "boards": {
+    "3x3": {
+      "size": 3,
+      "entries": [
+        {
+          "id": "m1q7x3k2",
+          "name": "JQ",
+          "ms": 18420,
+          "seconds": 18.42,
+          "moves": 27,
+          "date": "2026-09-18",
+          "time": "20:14:33",
+          "timestamp": 1789503273921,
+          "iso": "2026-09-18T12:14:33.921Z"
+        },
+        {
+          "id": "m1q8a0f6",
+          "name": "NEKO",
+          "ms": 21770,
+          "seconds": 21.77,
+          "moves": 34,
+          "date": "2026-09-18",
+          "time": "20:31:08",
+          "timestamp": 1789504268104,
+          "iso": "2026-09-18T12:31:08.104Z"
+        },
+        {
+          "id": "m1qb5t19",
+          "name": "R2",
+          "ms": 30150,
+          "seconds": 30.15,
+          "moves": 41,
+          "date": "2026-09-17",
+          "time": "09:02:47",
+          "timestamp": 1789383767511,
+          "iso": "2026-09-17T01:02:47.511Z"
+        }
+      ]
+    },
+    "4x4": {
+      "size": 4,
+      "entries": [
+        {
+          "id": "m1qc9d47",
+          "name": "JQ",
+          "ms": 62840,
+          "seconds": 62.84,
+          "moves": 71,
+          "date": "2026-09-18",
+          "time": "21:05:12",
+          "timestamp": 1789506312880,
+          "iso": "2026-09-18T13:05:12.880Z"
+        }
+      ]
+    }
+  }
+}

@@ -16,25 +16,68 @@
     --red:#b8342b;
     --cell:104px;
     --gap:9px;
+    --pad:28px;
+    --n:3;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{height:100%}
   body{
-    margin:0;
+    margin:0;min-height:100%;
     display:flex;align-items:center;justify-content:center;
     padding:24px 16px;
     background:
       radial-gradient(120% 90% at 50% 0%, #1b6450 0%, var(--felt-1) 38%, var(--felt-2) 100%);
+    background-attachment:fixed;
     color:var(--ivory);
     font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI","Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
-    overflow:hidden;
+    overflow-x:hidden;
   }
   body::before{
     content:"";position:fixed;inset:0;pointer-events:none;opacity:.35;
     background-image:radial-gradient(rgba(255,255,255,.055) 1px, transparent 1px);
     background-size:3px 3px;
   }
-  .app{position:relative;display:flex;flex-direction:column;align-items:center;gap:18px}
+  .app{margin:auto;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:30px}
+  .game{position:relative;display:flex;flex-direction:column;align-items:center;gap:18px}
+
+  /* ---------- 排行榜 ---------- */
+  .side{width:min(300px,90vw)}
+  .rank{
+    border-radius:14px;padding:14px 16px 12px;
+    background:linear-gradient(180deg,rgba(0,0,0,.30),rgba(0,0,0,.16));
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 6px 18px rgba(0,0,0,.28);
+  }
+  .rank-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+  .rank-tools{display:flex;gap:6px}
+  .rank-head h3{margin:0;font-size:15px;font-weight:600;letter-spacing:.09em}
+  .rank-head h3 span{font-size:12px;font-weight:500;color:rgba(230,244,238,.45);letter-spacing:.06em}
+  .mini{
+    font:inherit;font-size:11px;cursor:pointer;padding:4px 10px;border:0;border-radius:999px;
+    background:transparent;color:rgba(230,244,238,.7);box-shadow:inset 0 0 0 1px rgba(230,244,238,.25);
+  }
+  .mini:hover{color:#12362c;background:#dccfae;box-shadow:none}
+  .mini:focus-visible{outline:2px solid #ffe6a8;outline-offset:2px}
+  .rank-list{list-style:none;margin:0;padding:0;max-height:min(46vh,320px);overflow:auto}
+  .rank-list li{
+    display:grid;grid-template-columns:22px 1fr auto;column-gap:10px;row-gap:3px;
+    align-items:baseline;padding:8px 6px;font-size:13px;
+    border-bottom:1px solid rgba(255,255,255,.06);
+  }
+  .rank-list .r{grid-row:1/3;align-self:center}
+  .rank-list .nm{grid-column:2;grid-row:1}
+  .rank-list .ms{grid-column:3;grid-row:1}
+  .rank-list .meta{
+    grid-column:2/4;grid-row:2;display:flex;gap:7px;
+    font-size:10.5px;color:rgba(230,244,238,.36);font-variant-numeric:tabular-nums;
+  }
+  .rank-list li:last-child{border-bottom:0}
+  .rank-list .r{color:rgba(230,244,238,.42);font-variant-numeric:tabular-nums}
+  .rank-list .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.05em}
+  .rank-list .ms{font-variant-numeric:tabular-nums;font-weight:640}
+  .rank-list li.top .r,.rank-list li.top .ms{color:#ffe6a8}
+  .rank-list li.me{background:rgba(255,230,168,.14);border-radius:7px;border-bottom-color:transparent}
+  .rank-list li.msg{display:block;text-align:center;padding:20px 6px;border:0;color:rgba(230,244,238,.45);line-height:1.6}
+  .rank-foot{margin:10px 0 0;font-size:11px;line-height:1.6;color:rgba(230,244,238,.38)}
 
   /* ---------- 計時列 ---------- */
   .hud{
@@ -54,7 +97,7 @@
   /* ---------- 牌桌 ---------- */
   .table{
     position:relative;
-    padding:calc(var(--cell)*.30);
+    padding:var(--pad);
     border-radius:18px;
     background:linear-gradient(160deg,var(--wood-hi),var(--wood) 45%,#33231704 100%),var(--wood);
     box-shadow:
@@ -64,7 +107,7 @@
   }
   .board{
     position:relative;
-    width:calc(var(--cell)*3);height:calc(var(--cell)*3);
+    width:calc(var(--cell)*var(--n));height:calc(var(--cell)*var(--n));
     overflow:hidden;border-radius:8px;
     background:#0a2c23;
     box-shadow:inset 0 2px 10px rgba(0,0,0,.6);
@@ -101,7 +144,7 @@
 
   /* ---------- 木框上的方向鍵 ---------- */
   .nub{
-    position:absolute;width:26px;height:26px;padding:0;border:0;border-radius:50%;
+    position:absolute;width:24px;height:24px;padding:0;border:0;border-radius:50%;
     background:radial-gradient(circle at 35% 30%,#d7b779,#9c7b45 70%,#6d5329);
     box-shadow:0 1px 2px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.4);
     cursor:pointer;display:grid;place-items:center;opacity:.55;transition:opacity .15s,transform .15s;
@@ -111,7 +154,17 @@
   .nub svg{width:11px;height:11px;fill:#402e14}
 
   /* ---------- 控制列 ---------- */
-  .controls{display:flex;gap:10px;align-items:center}
+  .controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:center}
+  .seg{display:flex;padding:3px;border-radius:999px;background:rgba(0,0,0,.28);box-shadow:inset 0 1px 3px rgba(0,0,0,.4)}
+  .seg button{
+    font:inherit;font-size:13px;font-weight:600;letter-spacing:.04em;cursor:pointer;
+    padding:6px 15px;border:0;border-radius:999px;background:transparent;color:rgba(230,244,238,.6);
+  }
+  .seg button[aria-pressed="true"]{
+    color:#12362c;background:linear-gradient(180deg,#f3ecd9,#dccfae);
+    box-shadow:0 1px 3px rgba(0,0,0,.35);
+  }
+  .seg button:focus-visible{outline:2px solid #ffe6a8;outline-offset:2px}
   .btn{
     font:inherit;font-size:14px;font-weight:600;color:#12362c;
     padding:9px 18px;border:0;border-radius:999px;cursor:pointer;
@@ -144,6 +197,16 @@
     opacity:0;visibility:hidden;transition:opacity .28s;
   }
   .win.on{opacity:1;visibility:visible}
+  .win .entry{display:flex;gap:8px;margin-top:2px}
+  .win input{
+    font:inherit;font-size:15px;font-weight:600;letter-spacing:.12em;text-align:center;
+    width:126px;padding:9px 12px;border:0;border-radius:999px;
+    background:rgba(255,255,255,.1);color:var(--ivory);
+    box-shadow:inset 0 0 0 1px rgba(230,244,238,.32);
+  }
+  .win input::placeholder{letter-spacing:.02em;color:rgba(230,244,238,.4);font-weight:400}
+  .win input:focus{outline:2px solid #ffe6a8;outline-offset:1px}
+  .win .note{margin:4px 0 8px;font-size:11px;color:rgba(222,240,232,.55);min-height:15px}
   .win h2{margin:0;font-size:20px;font-weight:600;letter-spacing:.06em}
   .win .big{
     font-size:46px;font-weight:650;font-variant-numeric:tabular-nums;line-height:1.1;
@@ -155,6 +218,7 @@
 </head>
 <body>
 <div class="app">
+<div class="game">
 
   <div class="hud">
     <div class="stat"><span>步數</span><b id="moves">0</b></div>
@@ -168,72 +232,109 @@
       <h2>完成</h2>
       <div class="big" id="winTime">0.00</div>
       <p id="winSub">共 0 步</p>
-      <button class="btn" id="again">再來一局</button>
+      <div class="entry">
+        <input id="who" maxlength="8" placeholder="輸入代號" autocomplete="off"
+               spellcheck="false" aria-label="玩家代號，限英文與數字 1 到 8 字">
+        <button class="btn" id="post" disabled>登錄成績</button>
+      </div>
+      <p class="note" id="note">英數 1–8 字</p>
+      <button class="btn quiet" id="again">再來一局</button>
     </div>
   </div>
 
   <div class="controls">
+    <div class="seg" id="modeSeg" role="group" aria-label="盤面大小">
+      <button type="button" data-n="3" aria-pressed="true">3×3</button>
+      <button type="button" data-n="4" aria-pressed="false">4×4</button>
+    </div>
     <button class="btn" id="shuffle">重新打亂</button>
     <button class="btn quiet" id="hint" aria-pressed="true">歸位提示</button>
   </div>
 
   <p class="rule">
     整排拖曳：橫排左右滑、直排上下滑，推出去的方塊會從另一端繞回來。<br>
-    把 <kbd>1</kbd> 到 <kbd>9</kbd> 從左上排到右下，用最短的時間。
+    把 <kbd>1</kbd> 到 <kbd id="ruleMax">9</kbd> 從左上排到右下，用最短的時間。
   </p>
+</div>
+
+<aside class="side">
+  <div class="rank">
+    <div class="rank-head">
+      <h3>排行榜 <span id="rankMode">3×3</span></h3>
+      <div class="rank-tools">
+        <button class="mini" id="copy">複製 JSON</button>
+        <button class="mini" id="load">匯入檔案</button>
+        <input type="file" id="file" accept=".json,application/json" hidden>
+      </div>
+    </div>
+    <ol class="rank-list" id="rankList"><li class="msg">讀取中…</li></ol>
+    <p class="rank-foot" id="rankFoot">只顯示前 10 名，每個代號留最快的一局。成績共用，其他玩家也看得到。</p>
+  </div>
+</aside>
 </div>
 
 <script>
 (() => {
-  const N = 3;
-  const board = document.getElementById('board');
+  const root    = document.documentElement;
+  const board   = document.getElementById('board');
+  const table   = document.getElementById('table');
   const elMoves = document.getElementById('moves');
   const elTime  = document.getElementById('time');
   const elBest  = document.getElementById('best');
   const win     = document.getElementById('win');
 
-  let cell = 104;
-  let state = [1,2,3,4,5,6,7,8,9];   // state[slot] = 方塊號碼
-  const tiles = {};                  // 號碼 -> element
+  let N = 3, cell = 104;
+  let state = [], tiles = {}, sockets = [], nubs = [];
   let moves = 0, startAt = 0, timerId = null, running = false;
   let busy = false, solved = false, best = null;
 
-  /* ---------- 建立盤面 ---------- */
-  for (let i = 0; i < 9; i++) {
-    const s = document.createElement('div');
-    s.className = 'socket';
-    s.innerHTML = '<i></i>';
-    s.style.transform = `translate3d(${(i%3)}00%, ${Math.floor(i/3)}00%, 0)`;
-    board.appendChild(s);
-  }
-  for (let n = 1; n <= 9; n++) {
-    const t = document.createElement('div');
-    t.className = 'tile';
-    t.dataset.n = n;
-    t.innerHTML = `<div class="face">${n}</div>`;
-    tiles[n] = t;
-    board.appendChild(t);
-  }
-  board.classList.add('hint');
-
   /* ---------- 尺寸 ---------- */
   function resize() {
-    const w = Math.min(window.innerWidth - 96, 430);
-    const h = window.innerHeight - 330;
-    cell = Math.max(62, Math.min(120, Math.floor(Math.min(w, h) / 3)));
-    document.documentElement.style.setProperty('--cell', cell + 'px');
-    render(true);
+    const wide = window.innerWidth >= 880;
+    const w = Math.min(window.innerWidth - (wide ? 430 : 88), 470);
+    const h = window.innerHeight - (wide ? 290 : 350);
+    cell = Math.max(52, Math.min(N === 3 ? 118 : 94, Math.floor(Math.min(w, h) / N)));
+    root.style.setProperty('--cell', cell + 'px');
+    root.style.setProperty('--gap', (N === 3 ? 9 : 7) + 'px');
+    root.style.setProperty('--pad', Math.max(24, Math.min(34, Math.round(cell * 0.3))) + 'px');
+    layoutNubs();
+    render();
   }
   window.addEventListener('resize', resize);
 
-  /* ---------- 繪製 ---------- */
-  const xy = (slot) => ({ x: (slot % 3) * cell, y: Math.floor(slot / 3) * cell });
+  /* ---------- 建立盤面 ---------- */
+  const xy = s => ({ x: (s % N) * cell, y: Math.floor(s / N) * cell });
 
-  function render(instant) {
-    if (instant) board.style.transition = 'none';
-    for (let i = 0; i < 9; i++) {
-      const el = tiles[state[i]];
+  function build() {
+    board.innerHTML = '';
+    tiles = {}; sockets = [];
+    state = Array.from({ length: N * N }, (_, i) => i + 1);
+    for (let i = 0; i < N * N; i++) {
+      const s = document.createElement('div');
+      s.className = 'socket';
+      s.innerHTML = '<i></i>';
+      board.appendChild(s);
+      sockets.push(s);
+    }
+    for (let n = 1; n <= N * N; n++) {
+      const t = document.createElement('div');
+      t.className = 'tile';
+      t.dataset.n = n;
+      t.innerHTML = `<div class="face">${n}</div>`;
+      tiles[n] = t;
+      board.appendChild(t);
+    }
+    buildNubs();
+  }
+
+  function render() {
+    if (!state.length) return;
+    sockets.forEach((s, i) => {
       const p = xy(i);
+      s.style.transform = `translate3d(${p.x}px,${p.y}px,0)`;
+    });
+    for (let i = 0; i < N * N; i++) {
+      const el = tiles[state[i]], p = xy(i);
       el.style.transition = 'none';
       el.style.transform = `translate3d(${p.x}px,${p.y}px,0)`;
       el.classList.toggle('ok', state[i] === i + 1);
@@ -243,27 +344,26 @@
 
   /* ---------- 模型 ---------- */
   const lineSlots = (axis, idx) =>
-    axis === 'row' ? [idx*3, idx*3+1, idx*3+2] : [idx, idx+3, idx+6];
+    Array.from({ length: N }, (_, k) => axis === 'row' ? idx * N + k : idx + k * N);
 
   function applyShift(axis, idx, steps) {
-    const s = ((steps % 3) + 3) % 3;
+    const s = ((steps % N) + N) % N;
     if (!s) return;
     const slots = lineSlots(axis, idx);
     const nums = slots.map(i => state[i]);
-    slots.forEach((_, i) => { state[slots[(i + s) % 3]] = nums[i]; });
+    slots.forEach((_, i) => { state[slots[(i + s) % N]] = nums[i]; });
   }
 
   const isSolved = () => state.every((n, i) => n === i + 1);
 
-  /* ---------- 動畫用的一整排（含頭尾分身） ---------- */
+  /* ---------- 整排動畫（含頭尾分身） ---------- */
   function beginLine(axis, idx) {
     const slots = lineSlots(axis, idx);
     const items = [];
-    slots.forEach((slot, p) => {
-      const el = tiles[state[slot]];
-      const base = xy(slot);
+    slots.forEach(slot => {
+      const el = tiles[state[slot]], base = xy(slot);
       items.push({ el, base });
-      for (const k of [-3, 3]) {
+      for (const k of [-N, N]) {
         const g = el.cloneNode(true);
         g.classList.add('ghost');
         const gb = axis === 'row'
@@ -298,11 +398,8 @@
     }
     setTimeout(() => {
       h.items.forEach(it => { if (it.ghost) it.el.remove(); });
-      if (steps) {
-        applyShift(h.axis, h.idx, steps);
-        bumpMove();
-      }
-      render(true);
+      if (steps) { applyShift(h.axis, h.idx, steps); bumpMove(); }
+      render();
       busy = false;
       if (steps) checkWin();
     }, dur + 20);
@@ -318,12 +415,12 @@
   board.addEventListener('pointerdown', e => {
     if (busy || solved) return;
     const r = board.getBoundingClientRect();
-    const c = Math.floor((e.clientX - r.left) / cell);
+    const col = Math.floor((e.clientX - r.left) / cell);
     const row = Math.floor((e.clientY - r.top) / cell);
-    if (c < 0 || c > 2 || row < 0 || row > 2) return;
+    if (col < 0 || col >= N || row < 0 || row >= N) return;
     board.setPointerCapture(e.pointerId);
     board.classList.add('dragging');
-    drag = { x: e.clientX, y: e.clientY, row, col: c, h: null, d: 0 };
+    drag = { x: e.clientX, y: e.clientY, row, col, h: null, d: 0 };
   });
 
   board.addEventListener('pointermove', e => {
@@ -335,7 +432,8 @@
       drag.h = beginLine(axis, axis === 'row' ? drag.row : drag.col);
     }
     const raw = drag.h.axis === 'row' ? dx : dy;
-    drag.d = Math.max(-2.4 * cell, Math.min(2.4 * cell, raw));
+    const lim = (N - 1) * cell + cell * 0.4;
+    drag.d = Math.max(-lim, Math.min(lim, raw));
     offsetLine(drag.h, drag.d);
   });
 
@@ -346,37 +444,52 @@
     drag = null;
     if (!h) return;
     let steps = Math.round(d / cell);
-    steps = Math.max(-2, Math.min(2, steps));
+    steps = Math.max(-(N - 1), Math.min(N - 1, steps));
     endLine(h, steps, steps === 0 ? 150 : 190);
   }
   board.addEventListener('pointerup', release);
   board.addEventListener('pointercancel', release);
 
   /* ---------- 木框方向鍵 ---------- */
-  const table = document.getElementById('table');
   const arrow = {
     up:   'M8 2 L14 12 L2 12 Z', down: 'M8 14 L14 4 L2 4 Z',
     left: 'M2 8 L12 14 L12 2 Z', right:'M14 8 L4 14 L4 2 Z'
   };
-  function nub(dir, i, css, label) {
-    const b = document.createElement('button');
-    b.className = 'nub'; b.style.cssText = css; b.setAttribute('aria-label', label);
-    b.innerHTML = `<svg viewBox="0 0 16 16"><path d="${arrow[dir]}"/></svg>`;
-    b.addEventListener('click', () => {
-      if (dir === 'left')  shift('row', i, -1);
-      if (dir === 'right') shift('row', i, 1);
-      if (dir === 'up')    shift('col', i, -1);
-      if (dir === 'down')  shift('col', i, 1);
-    });
-    table.appendChild(b);
+  const label = { left: '橫排左移', right: '橫排右移', up: '直排上移', down: '直排下移' };
+
+  function buildNubs() {
+    nubs.forEach(n => n.el.remove());
+    nubs = [];
+    for (let i = 0; i < N; i++) {
+      for (const dir of ['left', 'right', 'up', 'down']) {
+        const b = document.createElement('button');
+        b.className = 'nub';
+        b.setAttribute('aria-label', `第 ${i + 1} ${label[dir]}`);
+        b.innerHTML = `<svg viewBox="0 0 16 16"><path d="${arrow[dir]}"/></svg>`;
+        b.addEventListener('click', () => {
+          if (dir === 'left')  shift('row', i, -1);
+          if (dir === 'right') shift('row', i, 1);
+          if (dir === 'up')    shift('col', i, -1);
+          if (dir === 'down')  shift('col', i, 1);
+        });
+        table.appendChild(b);
+        nubs.push({ el: b, dir, i });
+      }
+    }
+    layoutNubs();
   }
-  for (let i = 0; i < 3; i++) {
-    const mid = `calc(var(--cell)*.30 + var(--cell)*${i + 0.5} - 13px)`;
-    const pad = 'calc(var(--cell)*.30/2 - 13px)';
-    nub('left',  i, `left:${pad};top:${mid}`,   `第 ${i+1} 橫排左移`);
-    nub('right', i, `right:${pad};top:${mid}`,  `第 ${i+1} 橫排右移`);
-    nub('up',    i, `top:${pad};left:${mid}`,   `第 ${i+1} 直排上移`);
-    nub('down',  i, `bottom:${pad};left:${mid}`,`第 ${i+1} 直排下移`);
+
+  function layoutNubs() {
+    const pad = parseFloat(getComputedStyle(root).getPropertyValue('--pad')) || 26;
+    const half = 12;
+    nubs.forEach(({ el, dir, i }) => {
+      const mid = pad + cell * (i + 0.5) - half + 'px';
+      const off = pad / 2 - half + 'px';
+      if (dir === 'left')  { el.style.left = off;   el.style.top = mid; }
+      if (dir === 'right') { el.style.right = off;  el.style.top = mid; }
+      if (dir === 'up')    { el.style.top = off;    el.style.left = mid; }
+      if (dir === 'down')  { el.style.bottom = off; el.style.left = mid; }
+    });
   }
 
   /* ---------- 計時與計步 ---------- */
@@ -397,33 +510,37 @@
     clearInterval(timerId);
     const ms = performance.now() - startAt;
     tick();
+    lastRun = { ms: Math.round(ms), moves };
     document.getElementById('winTime').textContent = fmt(ms);
-    document.getElementById('winSub').textContent = `共 ${moves} 步`;
+    document.getElementById('winSub').textContent = `${N}×${N} · 共 ${moves} 步`;
+    openEntry();
     win.classList.add('on');
     if (best === null || ms < best) { best = ms; elBest.textContent = fmt(ms); saveBest(ms); }
   }
 
-  /* ---------- 最佳紀錄 ---------- */
+  /* ---------- 個人最佳（每種盤面分開） ---------- */
   async function loadBest() {
+    const n = N;
+    elBest.textContent = '—';
+    best = null;
     try {
-      const r = await window.storage.get('best-ms');
-      if (r && r.value) { best = Number(r.value); elBest.textContent = fmt(best); }
+      const r = await window.storage.get(`best-ms-${n}`);
+      if (r && r.value && n === N) { best = Number(r.value); elBest.textContent = fmt(best); }
     } catch (e) {}
   }
-  async function saveBest(ms) { try { await window.storage.set('best-ms', String(ms)); } catch (e) {} }
-  if (window.storage) loadBest();
+  async function saveBest(ms) { try { await window.storage.set(`best-ms-${N}`, String(ms)); } catch (e) {} }
 
-  /* ---------- 打亂（只用合法步數，保證一定解得開） ---------- */
+  /* ---------- 打亂（只用合法步數，保證解得開） ---------- */
   function scramble() {
+    const rounds = N === 3 ? 40 : 80;
     let last = '';
-    for (let k = 0; k < 40; k++) {
+    for (let k = 0; k < rounds; k++) {
       const axis = Math.random() < 0.5 ? 'row' : 'col';
-      const idx = Math.floor(Math.random() * 3);
-      const steps = Math.random() < 0.5 ? 1 : -1;
+      const idx = Math.floor(Math.random() * N);
       const key = axis + idx;
       if (key === last && k) { k--; continue; }
       last = key;
-      applyShift(axis, idx, steps);
+      applyShift(axis, idx, Math.random() < 0.5 ? 1 : -1);
     }
     if (isSolved()) scramble();
   }
@@ -434,7 +551,7 @@
     moves = 0; running = false; solved = false; busy = false;
     elMoves.textContent = '0'; elTime.textContent = '0.00';
     scramble();
-    render(true);
+    render();
   }
 
   document.getElementById('shuffle').addEventListener('click', newGame);
@@ -444,8 +561,241 @@
     e.currentTarget.setAttribute('aria-pressed', on);
   });
 
-  resize();
-  newGame();
+  /* ---------- 盤面大小切換 ---------- */
+  const segBtns = [...document.querySelectorAll('#modeSeg button')];
+  segBtns.forEach(b => b.addEventListener('click', () => setMode(+b.dataset.n)));
+
+  function setMode(n) {
+    N = n;
+    root.style.setProperty('--n', n);
+    segBtns.forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.n === n)));
+    document.getElementById('ruleMax').textContent = n * n;
+    document.getElementById('rankMode').textContent = `${n}×${n}`;
+    build();
+    resize();
+    newGame();
+    loadBest();
+    listEl.innerHTML = canSave
+      ? '<li class="msg">讀取中…</li>'
+      : '<li class="msg">這個環境不支援共用儲存，<br>排行榜只在這一局有效。</li>';
+    loadRank();
+    try { window.storage.set('mode', String(n)); } catch (e) {}
+  }
+
+  /* ---------- 排行榜（每種盤面一份） ---------- */
+  const MAX_ROWS = 50;   // JSON 保留筆數
+  const TOP_N = 10;      // 畫面顯示筆數
+  const listEl = document.getElementById('rankList');
+  const footEl = document.getElementById('rankFoot');
+  const whoEl  = document.getElementById('who');
+  const postEl = document.getElementById('post');
+  const noteEl = document.getElementById('note');
+  let boardData = { v: 2, n: 3, entries: [] };
+  let lastRun = null, myName = '', canSave = !!window.storage;
+
+  const lbKey = n => `leaderboard-v2-${n}`;
+  const clean = s => (s || '').replace(/[^A-Za-z0-9]/g, '').slice(0, 8);
+  const byScore = (a, b) => a.ms - b.ms || a.moves - b.moves;
+  const p2 = v => String(v).padStart(2, '0');
+
+  // 一筆成績的標準欄位：暱稱、時間、步數、日期、完成時刻、timestamp
+  function normalize(e) {
+    if (!e || typeof e !== 'object') return null;
+    const name = clean(e.name);
+    const ms = Math.round(Number(e.ms) || Number(e.seconds) * 1000 || 0);
+    const moves = Math.round(Number(e.moves) || 0);
+    if (!name || ms <= 0 || moves <= 0) return null;
+    const ts = Number(e.timestamp) || Date.parse(e.iso || e.at || '') || Date.now();
+    const d = new Date(ts);
+    return {
+      id: String(e.id || ts.toString(36) + Math.random().toString(36).slice(2, 6)),
+      name, ms,
+      seconds: +(ms / 1000).toFixed(2),
+      moves,
+      date: e.date || `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}`,
+      time: e.time || `${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}`,
+      timestamp: ts,
+      iso: d.toISOString()
+    };
+  }
+
+  // 併入成績：同代號只留最快的一局
+  function mergeInto(data, list) {
+    let added = 0;
+    for (const raw of list) {
+      const e = normalize(raw);
+      if (!e) continue;
+      const i = data.entries.findIndex(x => x.name.toLowerCase() === e.name.toLowerCase());
+      if (i < 0) { data.entries.push(e); added++; }
+      else if (byScore(e, data.entries[i]) < 0) { data.entries[i] = e; added++; }
+    }
+    data.entries.sort(byScore);
+    data.entries = data.entries.slice(0, MAX_ROWS);
+    return added;
+  }
+
+  async function exportAll() {
+    const [b3, b4] = await Promise.all([lbRead(3), lbRead(4)]);
+    return {
+      schema: 'loop-puzzle.leaderboard',
+      version: 3,
+      exportedAt: new Date().toISOString(),
+      boards: {
+        '3x3': { size: 3, entries: b3.entries },
+        '4x4': { size: 4, entries: b4.entries }
+      }
+    };
+  }
+
+  // 匯入時同時接受完整匯出檔、單一盤面物件或純陣列
+  function extract(json) {
+    const out = { 3: [], 4: [] };
+    if (Array.isArray(json)) out[N] = json;
+    else if (json && json.boards) {
+      for (const [k, b] of Object.entries(json.boards)) {
+        const n = Number(b && b.size) || (k.startsWith('4') ? 4 : 3);
+        if (out[n]) out[n] = out[n].concat((b && b.entries) || []);
+      }
+    } else if (json && Array.isArray(json.entries)) {
+      const n = Number(json.n || json.size) || N;
+      if (out[n]) out[n] = json.entries;
+    }
+    return out;
+  }
+
+  async function lbRead(n) {
+    try {
+      const r = await window.storage.get(lbKey(n), true);
+      const d = r && r.value ? JSON.parse(r.value) : null;
+      if (d && Array.isArray(d.entries)) {
+        d.entries = d.entries.map(normalize).filter(Boolean).sort(byScore);
+        return d;
+      }
+    } catch (e) { /* 尚無紀錄或讀取失敗，視為空榜 */ }
+    return { v: 2, n, entries: [] };
+  }
+
+  async function loadRank() {
+    if (!canSave) return;
+    const n = N;
+    const d = await lbRead(n);
+    if (n !== N) return;
+    boardData = d;
+    renderRank();
+  }
+
+  function renderRank(meId) {
+    listEl.innerHTML = '';
+    if (!boardData.entries.length) {
+      listEl.innerHTML = `<li class="msg">${N}×${N} 還沒有人登錄成績。<br>第一局就是你的。</li>`;
+      return;
+    }
+    boardData.entries.slice(0, TOP_N).forEach((e, i) => {
+      const li = document.createElement('li');
+      if (i < 3) li.className = 'top';
+      if (e.id === meId) li.className += ' me';
+      li.innerHTML =
+        `<span class="r">${i + 1}</span><span class="nm"></span>` +
+        `<span class="ms">${fmt(e.ms)}</span>` +
+        `<span class="meta"><span>${e.moves} 步</span><span>${e.date || ''} ${e.time || ''}</span></span>`;
+      li.querySelector('.nm').textContent = e.name;
+      listEl.appendChild(li);
+    });
+    const me = listEl.querySelector('.me');
+    if (me) me.scrollIntoView({ block: 'nearest' });
+  }
+
+  function openEntry() {
+    whoEl.value = myName;
+    whoEl.disabled = false;
+    postEl.disabled = !clean(myName);
+    postEl.textContent = '登錄成績';
+    noteEl.textContent = canSave ? '英數 1–8 字' : '目前無法連上排行榜，成績只留在這一局';
+    postEl.style.display = canSave ? '' : 'none';
+    whoEl.style.display = canSave ? '' : 'none';
+  }
+
+  whoEl.addEventListener('input', () => {
+    const v = clean(whoEl.value);
+    if (v !== whoEl.value) whoEl.value = v;
+    postEl.disabled = !v;
+    noteEl.textContent = v ? '英數 1–8 字' : '代號只能用英文字母與數字';
+  });
+  whoEl.addEventListener('keydown', e => { if (e.key === 'Enter' && !postEl.disabled) post(); });
+  postEl.addEventListener('click', post);
+
+  async function post() {
+    const name = clean(whoEl.value);
+    if (!name || !lastRun) return;
+    const n = N;
+    postEl.disabled = true; whoEl.disabled = true;
+    postEl.textContent = '登錄中…';
+
+    const rec = normalize({ name, ms: lastRun.ms, moves: lastRun.moves, timestamp: Date.now() });
+
+    boardData = await lbRead(n);                    // 送出前重讀，避免蓋掉別人的成績
+    boardData.n = n;
+    const kept = mergeInto(boardData, [rec]) > 0;
+
+    let ok = true;
+    try { await window.storage.set(lbKey(n), JSON.stringify(boardData), true); }
+    catch (e) { ok = false; canSave = false; }
+    try { await window.storage.set('player-name', name); } catch (e) {}
+    myName = name;
+
+    renderRank(kept ? rec.id : null);
+    postEl.textContent = ok ? '已登錄' : '存不進去';
+    const rank = boardData.entries.findIndex(e => e.id === rec.id) + 1;
+    noteEl.textContent = !ok ? '排行榜寫入失敗，成績只留在這一局'
+      : kept ? `${n}×${n} 排名第 ${rank} 名` : '這局比你的最佳成績慢，保留原紀錄';
+  }
+
+  const copyBtn = document.getElementById('copy');
+  const loadBtn = document.getElementById('load');
+  const fileEl  = document.getElementById('file');
+
+  copyBtn.addEventListener('click', async () => {
+    const json = JSON.stringify(await exportAll(), null, 2);
+    try { await navigator.clipboard.writeText(json); copyBtn.textContent = '已複製'; }
+    catch (err) { console.log(json); copyBtn.textContent = '看主控台'; }
+    setTimeout(() => { copyBtn.textContent = '複製 JSON'; }, 1600);
+  });
+
+  loadBtn.addEventListener('click', () => fileEl.click());
+  fileEl.addEventListener('change', async () => {
+    const f = fileEl.files && fileEl.files[0];
+    fileEl.value = '';
+    if (!f) return;
+    loadBtn.textContent = '匯入中…';
+    let added = 0, bad = false;
+    try {
+      const packs = extract(JSON.parse(await f.text()));
+      for (const n of [3, 4]) {
+        if (!packs[n].length) continue;
+        const data = await lbRead(n);
+        data.n = n;
+        added += mergeInto(data, packs[n]);
+        await window.storage.set(lbKey(n), JSON.stringify(data), true);
+        if (n === N) { boardData = data; renderRank(); }
+      }
+    } catch (err) { bad = true; }
+    loadBtn.textContent = bad ? '檔案讀不動' : added ? `已加入 ${added} 筆` : '沒有新成績';
+    setTimeout(() => { loadBtn.textContent = '匯入檔案'; }, 2200);
+  });
+
+  /* ---------- 啟動 ---------- */
+  (async () => {
+    if (!window.storage) {
+      canSave = false;
+      footEl.textContent = '成績無法保存。';
+      setMode(3);
+      return;
+    }
+    let mode = 3;
+    try { const r = await window.storage.get('mode'); if (r && +r.value === 4) mode = 4; } catch (e) {}
+    try { const r = await window.storage.get('player-name'); if (r && r.value) myName = clean(r.value); } catch (e) {}
+    setMode(mode);
+  })();
 })();
 </script>
 </body>
