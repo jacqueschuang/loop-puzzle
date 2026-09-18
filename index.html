@@ -76,6 +76,10 @@
   .rank-list .ms{font-variant-numeric:tabular-nums;font-weight:640}
   .rank-list li.top .r,.rank-list li.top .ms{color:#ffe6a8}
   .rank-list li.me{background:rgba(255,230,168,.14);border-radius:7px;border-bottom-color:transparent}
+  .rank-list .tag{
+    color:#ffd48a;background:rgba(255,212,138,.14);
+    padding:0 5px;border-radius:4px;font-size:10px;
+  }
   .rank-list li.msg{display:block;text-align:center;padding:20px 6px;border:0;color:rgba(230,244,238,.45);line-height:1.6}
   .rank-foot{margin:10px 0 0;font-size:11px;line-height:1.6;color:rgba(230,244,238,.38)}
 
@@ -518,17 +522,32 @@
     if (best === null || ms < best) { best = ms; elBest.textContent = fmt(ms); saveBest(ms); }
   }
 
+  /* ---------- 儲存層：Claude 預覽用 window.storage，一般網站用 localStorage ---------- */
+  const store = (() => {
+    if (window.storage) return {
+      kind: 'claude',
+      async get(k) { try { const r = await window.storage.get(k); return r && r.value != null ? r.value : null; } catch (e) { return null; } },
+      async set(k, v) { try { await window.storage.set(k, v); } catch (e) {} }
+    };
+    let ok = true;
+    try { localStorage.setItem('__probe', '1'); localStorage.removeItem('__probe'); } catch (e) { ok = false; }
+    const mem = new Map();
+    return {
+      kind: ok ? 'local' : 'memory',
+      async get(k) { try { return ok ? localStorage.getItem(k) : (mem.has(k) ? mem.get(k) : null); } catch (e) { return null; } },
+      async set(k, v) { try { ok ? localStorage.setItem(k, v) : mem.set(k, v); } catch (e) {} }
+    };
+  })();
+
   /* ---------- 個人最佳（每種盤面分開） ---------- */
   async function loadBest() {
     const n = N;
     elBest.textContent = '—';
     best = null;
-    try {
-      const r = await window.storage.get(`best-ms-${n}`);
-      if (r && r.value && n === N) { best = Number(r.value); elBest.textContent = fmt(best); }
-    } catch (e) {}
+    const v = await store.get(`best-ms-${n}`);
+    if (v && n === N) { best = Number(v); elBest.textContent = fmt(best); }
   }
-  async function saveBest(ms) { try { await window.storage.set(`best-ms-${N}`, String(ms)); } catch (e) {} }
+  function saveBest(ms) { store.set(`best-ms-${N}`, String(ms)); }
 
   /* ---------- 打亂（只用合法步數，保證解得開） ---------- */
   function scramble() {
@@ -575,25 +594,27 @@
     resize();
     newGame();
     loadBest();
-    listEl.innerHTML = canSave
-      ? '<li class="msg">讀取中…</li>'
-      : '<li class="msg">這個環境不支援共用儲存，<br>排行榜只在這一局有效。</li>';
+    listEl.innerHTML = '<li class="msg">讀取中…</li>';
     loadRank();
-    try { window.storage.set('mode', String(n)); } catch (e) {}
+    store.set('mode', String(n));
   }
 
-  /* ---------- 排行榜（每種盤面一份） ---------- */
-  const MAX_ROWS = 50;   // JSON 保留筆數
+  /* ---------- 排行榜：公開榜（leaderboard.json）+ 本機成績 ---------- */
+  const PUBLIC_URL = './leaderboard.json';
+  const MAX_ROWS = 50;   // 匯出檔保留筆數
   const TOP_N = 10;      // 畫面顯示筆數
   const listEl = document.getElementById('rankList');
   const footEl = document.getElementById('rankFoot');
   const whoEl  = document.getElementById('who');
   const postEl = document.getElementById('post');
   const noteEl = document.getElementById('note');
-  let boardData = { v: 2, n: 3, entries: [] };
-  let lastRun = null, myName = '', canSave = !!window.storage;
 
-  const lbKey = n => `leaderboard-v2-${n}`;
+  let pub = null;                       // 公開榜 { 3:[], 4:[] }，null 表示還沒讀
+  let pubOk = false;
+  let mine = { 3: [], 4: [] };          // 本機成績
+  let rows = [];                        // 目前顯示的合併結果
+  let lastRun = null, myName = '';
+
   const clean = s => (s || '').replace(/[^A-Za-z0-9]/g, '').slice(0, 8);
   const byScore = (a, b) => a.ms - b.ms || a.moves - b.moves;
   const p2 = v => String(v).padStart(2, '0');
@@ -615,36 +636,25 @@
       date: e.date || `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}`,
       time: e.time || `${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}`,
       timestamp: ts,
-      iso: d.toISOString()
+      iso: d.toISOString(),
+      local: !!e.local
     };
   }
+  const strip = ({ local, ...rest }) => rest;
 
   // 併入成績：同代號只留最快的一局
-  function mergeInto(data, list) {
+  function mergeInto(list, incoming) {
     let added = 0;
-    for (const raw of list) {
+    for (const raw of incoming) {
       const e = normalize(raw);
       if (!e) continue;
-      const i = data.entries.findIndex(x => x.name.toLowerCase() === e.name.toLowerCase());
-      if (i < 0) { data.entries.push(e); added++; }
-      else if (byScore(e, data.entries[i]) < 0) { data.entries[i] = e; added++; }
+      const i = list.findIndex(x => x.name.toLowerCase() === e.name.toLowerCase());
+      if (i < 0) { list.push(e); added++; }
+      else if (byScore(e, list[i]) < 0) { list[i] = e; added++; }
     }
-    data.entries.sort(byScore);
-    data.entries = data.entries.slice(0, MAX_ROWS);
+    list.sort(byScore);
+    if (list.length > MAX_ROWS) list.length = MAX_ROWS;
     return added;
-  }
-
-  async function exportAll() {
-    const [b3, b4] = await Promise.all([lbRead(3), lbRead(4)]);
-    return {
-      schema: 'loop-puzzle.leaderboard',
-      version: 3,
-      exportedAt: new Date().toISOString(),
-      boards: {
-        '3x3': { size: 3, entries: b3.entries },
-        '4x4': { size: 4, entries: b4.entries }
-      }
-    };
   }
 
   // 匯入時同時接受完整匯出檔、單一盤面物件或純陣列
@@ -663,41 +673,67 @@
     return out;
   }
 
-  async function lbRead(n) {
+  /* ---------- 讀取兩個來源 ---------- */
+  async function loadPublic() {
+    if (pub) return pub;
+    pub = { 3: [], 4: [] };
     try {
-      const r = await window.storage.get(lbKey(n), true);
-      const d = r && r.value ? JSON.parse(r.value) : null;
-      if (d && Array.isArray(d.entries)) {
-        d.entries = d.entries.map(normalize).filter(Boolean).sort(byScore);
-        return d;
+      const r = await fetch(PUBLIC_URL, { cache: 'no-cache' });
+      if (r.ok) {
+        const packs = extract(await r.json());
+        pub = { 3: packs[3].map(e => ({ ...e, local: false })),
+                4: packs[4].map(e => ({ ...e, local: false })) };
+        pubOk = true;
       }
-    } catch (e) { /* 尚無紀錄或讀取失敗，視為空榜 */ }
-    return { v: 2, n, entries: [] };
+    } catch (e) { pubOk = false; }
+    return pub;
+  }
+
+  async function loadMine() {
+    for (const n of [3, 4]) {
+      try {
+        const v = await store.get(`scores-${n}`);
+        const arr = v ? JSON.parse(v) : [];
+        mine[n] = Array.isArray(arr) ? arr.map(e => normalize({ ...e, local: true })).filter(Boolean) : [];
+      } catch (e) { mine[n] = []; }
+    }
+  }
+  function saveMine(n) { store.set(`scores-${n}`, JSON.stringify(mine[n].map(strip))); }
+
+  function combine(n) {
+    const list = [];
+    mergeInto(list, (pub && pub[n]) || []);
+    mergeInto(list, mine[n]);
+    return list;
   }
 
   async function loadRank() {
-    if (!canSave) return;
     const n = N;
-    const d = await lbRead(n);
+    await loadPublic();
     if (n !== N) return;
-    boardData = d;
+    rows = combine(n);
     renderRank();
+    footEl.textContent = pubOk
+      ? `公開榜讀自 leaderboard.json。標「未送出」的是只存在這台瀏覽器的成績。`
+      : `目前沒讀到 leaderboard.json（放在同一層即可），先顯示本機成績。`;
   }
 
   function renderRank(meId) {
     listEl.innerHTML = '';
-    if (!boardData.entries.length) {
-      listEl.innerHTML = `<li class="msg">${N}×${N} 還沒有人登錄成績。<br>第一局就是你的。</li>`;
+    if (!rows.length) {
+      listEl.innerHTML = `<li class="msg">${N}×${N} 還沒有成績。<br>第一局就是你的。</li>`;
       return;
     }
-    boardData.entries.slice(0, TOP_N).forEach((e, i) => {
+    rows.slice(0, TOP_N).forEach((e, i) => {
       const li = document.createElement('li');
       if (i < 3) li.className = 'top';
       if (e.id === meId) li.className += ' me';
       li.innerHTML =
         `<span class="r">${i + 1}</span><span class="nm"></span>` +
         `<span class="ms">${fmt(e.ms)}</span>` +
-        `<span class="meta"><span>${e.moves} 步</span><span>${e.date || ''} ${e.time || ''}</span></span>`;
+        `<span class="meta"><span>${e.moves} 步</span>` +
+        `<span>${e.date} ${e.time}</span>` +
+        (e.local ? '<span class="tag">未送出</span>' : '') + `</span>`;
       li.querySelector('.nm').textContent = e.name;
       listEl.appendChild(li);
     });
@@ -705,14 +741,13 @@
     if (me) me.scrollIntoView({ block: 'nearest' });
   }
 
+  /* ---------- 登錄成績 ---------- */
   function openEntry() {
     whoEl.value = myName;
     whoEl.disabled = false;
     postEl.disabled = !clean(myName);
-    postEl.textContent = '登錄成績';
-    noteEl.textContent = canSave ? '英數 1–8 字' : '目前無法連上排行榜，成績只留在這一局';
-    postEl.style.display = canSave ? '' : 'none';
-    whoEl.style.display = canSave ? '' : 'none';
+    postEl.textContent = '記下成績';
+    noteEl.textContent = '英數 1–8 字';
   }
 
   whoEl.addEventListener('input', () => {
@@ -724,30 +759,40 @@
   whoEl.addEventListener('keydown', e => { if (e.key === 'Enter' && !postEl.disabled) post(); });
   postEl.addEventListener('click', post);
 
-  async function post() {
+  function post() {
     const name = clean(whoEl.value);
     if (!name || !lastRun) return;
     const n = N;
     postEl.disabled = true; whoEl.disabled = true;
-    postEl.textContent = '登錄中…';
 
-    const rec = normalize({ name, ms: lastRun.ms, moves: lastRun.moves, timestamp: Date.now() });
-
-    boardData = await lbRead(n);                    // 送出前重讀，避免蓋掉別人的成績
-    boardData.n = n;
-    const kept = mergeInto(boardData, [rec]) > 0;
-
-    let ok = true;
-    try { await window.storage.set(lbKey(n), JSON.stringify(boardData), true); }
-    catch (e) { ok = false; canSave = false; }
-    try { await window.storage.set('player-name', name); } catch (e) {}
+    const rec = normalize({ name, ms: lastRun.ms, moves: lastRun.moves, timestamp: Date.now(), local: true });
+    const kept = mergeInto(mine[n], [rec]) > 0;
+    saveMine(n);
+    store.set('player-name', name);
     myName = name;
 
+    rows = combine(n);
     renderRank(kept ? rec.id : null);
-    postEl.textContent = ok ? '已登錄' : '存不進去';
-    const rank = boardData.entries.findIndex(e => e.id === rec.id) + 1;
-    noteEl.textContent = !ok ? '排行榜寫入失敗，成績只留在這一局'
-      : kept ? `${n}×${n} 排名第 ${rank} 名` : '這局比你的最佳成績慢，保留原紀錄';
+    postEl.textContent = '已記下';
+    const rank = rows.findIndex(e => e.id === rec.id) + 1;
+    noteEl.textContent = !kept ? '這局比你的最佳成績慢，保留原紀錄'
+      : rank && rank <= TOP_N ? `第 ${rank} 名 · 按「複製 JSON」可更新公開榜`
+      : '已存在這台瀏覽器，按「複製 JSON」可更新公開榜';
+  }
+
+  /* ---------- 匯出／匯入 ---------- */
+  async function exportAll() {
+    await loadPublic();
+    const boards = {};
+    for (const n of [3, 4]) {
+      boards[`${n}x${n}`] = { size: n, entries: combine(n).map(strip) };
+    }
+    return {
+      schema: 'loop-puzzle.leaderboard',
+      version: 3,
+      exportedAt: new Date().toISOString(),
+      boards
+    };
   }
 
   const copyBtn = document.getElementById('copy');
@@ -772,12 +817,11 @@
       const packs = extract(JSON.parse(await f.text()));
       for (const n of [3, 4]) {
         if (!packs[n].length) continue;
-        const data = await lbRead(n);
-        data.n = n;
-        added += mergeInto(data, packs[n]);
-        await window.storage.set(lbKey(n), JSON.stringify(data), true);
-        if (n === N) { boardData = data; renderRank(); }
+        added += mergeInto(mine[n], packs[n].map(e => ({ ...e, local: true })));
+        saveMine(n);
       }
+      rows = combine(N);
+      renderRank();
     } catch (err) { bad = true; }
     loadBtn.textContent = bad ? '檔案讀不動' : added ? `已加入 ${added} 筆` : '沒有新成績';
     setTimeout(() => { loadBtn.textContent = '匯入檔案'; }, 2200);
@@ -785,18 +829,14 @@
 
   /* ---------- 啟動 ---------- */
   (async () => {
-    if (!window.storage) {
-      canSave = false;
-      footEl.textContent = '成績無法保存。';
-      setMode(3);
-      return;
-    }
-    let mode = 3;
-    try { const r = await window.storage.get('mode'); if (r && +r.value === 4) mode = 4; } catch (e) {}
-    try { const r = await window.storage.get('player-name'); if (r && r.value) myName = clean(r.value); } catch (e) {}
-    setMode(mode);
+    await loadMine();
+    const savedName = await store.get('player-name');
+    if (savedName) myName = clean(savedName);
+    const savedMode = await store.get('mode');
+    setMode(Number(savedMode) === 4 ? 4 : 3);
   })();
 })();
+
 </script>
 </body>
 </html>
